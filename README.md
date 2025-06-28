@@ -196,25 +196,10 @@ All output files are organized within the specified project folder:
 - **Basic Subnet Classification**: No Variable Length Subnet Masking (VLSM) support
 - **Visualization Complexity**: Performance may vary with very large networks
 
-## Troubleshooting
-
-### Suppressing Qt Debug Messages
-If you encounter Qt-related debug messages, add this to the beginning of your script:
-
-```python
-import os
-os.environ["QT_LOGGING_RULES"] = "qt5ct.debug=false;qt6ct.debug=false"
-```
-
-Alternatively, use the non-interactive backend:
-```python
-import matplotlib
-matplotlib.use('Agg')
-```
 
 ## Contributing
 
-We welcome contributions to improve Hopper! Please feel free to:
+I welcome contributions to improve Hopper! Please feel free to:
 - Submit bug reports and feature requests through GitHub issues
 - Propose improvements via pull requests
 - Share use cases and feedback
