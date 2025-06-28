@@ -1,6 +1,11 @@
 import ipaddress
 from collections import defaultdict, deque
 import argparse
+import json
+import networkx as nx
+import matplotlib.pyplot as plt
+from datetime import datetime
+import os
 
 class Hopper:
     def __init__(self, subnet_mask="255.255.255.0"):
@@ -10,7 +15,7 @@ class Hopper:
         self.graph = defaultdict(set)
 
     def load_ips(self, ip_file):
-        print("\nLoading IPs and grouping into networks...")
+        print("\n[*] Loading IPs and grouping into networks...")
         with open(ip_file, "r") as f:
             for line in f:
                 ip = line.strip()
@@ -22,10 +27,9 @@ class Hopper:
                     self.network_map[net_str].append(ip)
                     self.ip_to_network[ip] = net_str
                 except ValueError:
-                    print(f"❌ Invalid IP skipped: {ip}")
+                    print(f"[*] Invalid IP skipped: {ip}")
 
-        # Fancy display
-        print("\n📊 Classified Networks:")
+        print("\n[*] Classified Networks:")
         for idx, (network, ips) in enumerate(sorted(self.network_map.items()), start=0):
             label = f"Network {chr(ord('A') + idx)}"
             print(f"\n🌐 {label}: {network}")
@@ -33,7 +37,7 @@ class Hopper:
                 print(f"   ↪ {ip}")
 
     def load_edges(self, edge_file):
-        print("\n🔗 Building connectivity graph...")
+        print("\n[*] Building connectivity graph...")
         with open(edge_file, "r") as f:
             for line in f:
                 if "-" not in line:
@@ -56,14 +60,14 @@ class Hopper:
                 if net2 and net2 != net1:
                     connected_networks[net1].add(net2)
 
-        print("\n🌍 Connected Networks:")
+        print("\n[*] Connected Networks:")
         for net1, nets in connected_networks.items():
             print(f"🔸 {net1} connected to:")
             for net2 in nets:
                 print(f"   ↪ {net2}")
 
     def find_path(self, src, dst):
-        print(f"\n🚀 Looking for path from {src} to {dst}...")
+        print(f"\n[*] Looking for path from {src} to {dst}...")
         visited = set()
         queue = deque([[src]])
 
@@ -72,9 +76,9 @@ class Hopper:
             node = path[-1]
 
             if node == dst:
-                print("\n✅ Path Found:")
+                print("\n[*] Path Found:")
                 print(" → ".join(path))
-                return
+                return path
 
             if node not in visited:
                 visited.add(node)
@@ -82,7 +86,61 @@ class Hopper:
                     if neighbor not in visited:
                         queue.append(path + [neighbor])
 
-        print("❌ No path found.")
+        print("[*] No path found.")
+        return None
+
+    def export_json(self, out_file):
+        print(f"\n[*] Exporting graph to {out_file} (JSON)...")
+        data = {
+            "nodes": list(self.graph.keys()),
+            "edges": [(a, b) for a in self.graph for b in self.graph[a]]
+        }
+        with open(out_file, "w") as f:
+            json.dump(data, f, indent=4)
+        print("✅ JSON export complete.")
+
+    def visualize_graph(self):
+        print("\n[*] Drawing network graph...")
+        G = nx.Graph()
+        for node in self.graph:
+            G.add_node(node)
+            for neighbor in self.graph[node]:
+                G.add_edge(node, neighbor)
+
+        plt.figure(figsize=(10, 6))
+        pos = nx.spring_layout(G)
+        nx.draw(G, pos, with_labels=True, node_color='skyblue', edge_color='gray', node_size=2000, font_size=10)
+        plt.title("Hopper Network Graph")
+        plt.tight_layout()
+        plt.savefig("hopper_graph.png")
+        plt.show()
+        print("✅ Graph image saved as 'hopper_graph.png'")
+
+    def generate_html_report(self):
+        print("\n🧾 Generating HTML report...")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        html = f"""
+        <html>
+        <head><title>Hopper Network Report</title></head>
+        <body>
+        <h1>📄 Hopper Network Report</h1>
+        <p><b>Generated:</b> {timestamp}</p>
+        <h2>🕸️ Network Graph</h2>
+        <img src="hopper_graph.png" width="800">
+        <h2>🔗 Connectivity Edges</h2>
+        <ul>
+        """
+        for node in self.graph:
+            for neighbor in self.graph[node]:
+                html += f"<li>{node} ↔ {neighbor}</li>"
+
+        html += """
+        </ul>
+        </body></html>
+        """
+        with open("hopper_report.html", "w") as f:
+            f.write(html)
+        print("✅ HTML report saved as 'hopper_report.html'")
 
 
 if __name__ == "__main__":
@@ -91,7 +149,9 @@ if __name__ == "__main__":
     parser.add_argument("edges_file", help="File containing IP-to-IP connectivity")
     parser.add_argument("--path", nargs=2, metavar=("SRC", "DST"), help="Find path from SRC to DST")
     parser.add_argument("--subnet", default="255.255.255.0", help="Subnet mask (default: 255.255.255.0)")
-
+    parser.add_argument("--export", action="store_true", help="Export graph to JSON")
+    parser.add_argument("--visualize", action="store_true", help="Visualize the graph")
+    parser.add_argument("--report", action="store_true", help="Generate HTML report")
 
     args = parser.parse_args()
 
@@ -101,3 +161,12 @@ if __name__ == "__main__":
 
     if args.path:
         hopper.find_path(args.path[0], args.path[1])
+
+    if args.export:
+        hopper.export_json("hopper_graph.json")
+
+    if args.visualize:
+        hopper.visualize_graph()
+
+    if args.report:
+        hopper.generate_html_report()
