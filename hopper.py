@@ -12,13 +12,16 @@ import base64
 from io import BytesIO
 
 class Hopper:
-    def __init__(self, subnet_mask="255.255.255.0"):
+    def __init__(self, subnet_mask="255.255.255.0", project_folder="hopper_output"):
         self.subnet_mask = subnet_mask
+        self.project_folder = project_folder
         self.ip_to_network = {}
         self.network_map = defaultdict(list)
         self.graph = defaultdict(set)
         self.network_labels = {}
         self.connected_networks = defaultdict(set)
+        # Create project folder if it doesn't exist
+        os.makedirs(self.project_folder, exist_ok=True)
 
     def load_ips(self, ip_file):
         print("\n[*] Loading IPs and grouping into networks...")
@@ -69,7 +72,7 @@ class Hopper:
                 net2 = self.ip_to_network.get(ip2)
                 if net2 and net2 != net1:
                     self.connected_networks[net1].add(net2)
-                    self.connected_networks[net2].add(net1)  # Make it bidirectional
+                    self.connected_networks[net2].add(net1)
 
         print("\n[*] Connected Networks:")
         for net1, nets in self.connected_networks.items():
@@ -101,9 +104,8 @@ class Hopper:
         return None
 
     def export_json(self, out_file):
-        print(f"\n[*] Exporting graph to {out_file} (JSON)...")
+        print(f"\n[*] Exporting graph to {os.path.join(self.project_folder, out_file)} (JSON)...")
         
-        # Create comprehensive JSON structure
         data = {
             "metadata": {
                 "subnet_mask": self.subnet_mask,
@@ -117,7 +119,6 @@ class Hopper:
             "edges": []
         }
         
-        # Add network information
         for network, ips in self.network_map.items():
             data["networks"][network] = {
                 "label": self.network_labels.get(network, network),
@@ -126,7 +127,6 @@ class Hopper:
                 "connected_to": list(self.connected_networks.get(network, []))
             }
         
-        # Add edges (avoid duplicates)
         processed_edges = set()
         for node in self.graph:
             for neighbor in self.graph[node]:
@@ -141,69 +141,56 @@ class Hopper:
                         "is_inter_network": self.ip_to_network.get(edge[0]) != self.ip_to_network.get(edge[1])
                     })
         
-        with open(out_file, "w") as f:
+        with open(os.path.join(self.project_folder, out_file), "w") as f:
             json.dump(data, f, indent=4)
         print("✅ JSON export complete.")
 
     def visualize_graph(self, output_file="hopper_graph.png", style="network"):
-        """
-        Enhanced visualization with multiple styles
-        style options: 'network', 'detailed', 'hierarchical'
-        """
         print(f"\n[*] Drawing network graph (style: {style})...")
+        output_path = os.path.join(self.project_folder, output_file)
         
         if style == "network":
-            self._visualize_network_level(output_file)
+            self._visualize_network_level(output_path)
         elif style == "detailed":
-            self._visualize_detailed_graph(output_file)
+            self._visualize_detailed_graph(output_path)
         elif style == "hierarchical":
-            self._visualize_hierarchical(output_file)
+            self._visualize_hierarchical(output_path)
         else:
-            self._visualize_detailed_graph(output_file)
+            self._visualize_detailed_graph(output_path)
 
     def _visualize_network_level(self, output_file):
-        """Network-level visualization showing subnets as nodes"""
         plt.figure(figsize=(14, 10))
-        plt.style.use('default')  # Clean style
+        plt.style.use('default')
         
-        # Create network graph
         G = nx.Graph()
-        
-        # Add network nodes
         for network in self.network_map.keys():
             G.add_node(network)
         
-        # Add edges between networks
         for net1, connected_nets in self.connected_networks.items():
             for net2 in connected_nets:
                 if not G.has_edge(net1, net2):
                     G.add_edge(net1, net2)
         
-        # Create layout
         if len(G.nodes()) > 1:
             pos = nx.spring_layout(G, k=3, iterations=50, seed=42)
         else:
             pos = {list(G.nodes())[0]: (0, 0)} if G.nodes() else {}
         
-        # Color scheme
         colors = plt.cm.Set3(np.linspace(0, 1, max(len(self.network_map), 1)))
         node_colors = [colors[i] for i in range(len(G.nodes()))]
         
-        # Draw network nodes
         nx.draw_networkx_nodes(G, pos, 
-                              node_color=node_colors,
-                              node_size=4000,
-                              alpha=0.8,
-                              edgecolors='black',
-                              linewidths=2)
+                             node_color=node_colors,
+                             node_size=4000,
+                             alpha=0.8,
+                             edgecolors='black',
+                             linewidths=2)
         
-        # Draw edges with better styling
         nx.draw_networkx_edges(G, pos,
-                              edge_color='#666666',
-                              width=3,
-                              alpha=0.7)
+                             edge_color='#666666',
+                             width=3,
+                             alpha=0.7)
         
-        # Add custom labels with network info
         labels = {}
         for network in G.nodes():
             label = self.network_labels.get(network, network)
@@ -225,11 +212,9 @@ class Hopper:
         print(f"✅ Network-level graph saved as '{output_file}'")
 
     def _visualize_detailed_graph(self, output_file):
-        """Detailed visualization showing individual IPs"""
         plt.figure(figsize=(16, 12))
         plt.style.use('default')
         
-        # Create IP-level graph
         G = nx.Graph()
         for node in self.graph:
             G.add_node(node)
@@ -240,10 +225,8 @@ class Hopper:
             print("❌ No nodes to visualize")
             return
         
-        # Create layout
         pos = nx.spring_layout(G, k=2, iterations=100, seed=42)
         
-        # Color nodes by network
         colors = plt.cm.Set3(np.linspace(0, 1, max(len(self.network_map), 1)))
         network_color_map = {}
         for i, network in enumerate(sorted(self.network_map.keys())):
@@ -255,21 +238,18 @@ class Hopper:
             network = self.ip_to_network.get(node)
             if network:
                 node_colors.append(network_color_map[network])
-                # Size nodes based on connectivity
                 node_sizes.append(500 + len(self.graph[node]) * 100)
             else:
                 node_colors.append('gray')
                 node_sizes.append(500)
         
-        # Draw nodes
         nx.draw_networkx_nodes(G, pos,
-                              node_color=node_colors,
-                              node_size=node_sizes,
-                              alpha=0.8,
-                              edgecolors='black',
-                              linewidths=1)
+                             node_color=node_colors,
+                             node_size=node_sizes,
+                             alpha=0.8,
+                             edgecolors='black',
+                             linewidths=1)
         
-        # Draw edges with different colors for inter/intra network
         inter_network_edges = []
         intra_network_edges = []
         
@@ -281,30 +261,25 @@ class Hopper:
             else:
                 intra_network_edges.append(edge)
         
-        # Draw intra-network edges (same subnet)
         nx.draw_networkx_edges(G, pos, edgelist=intra_network_edges,
-                              width=2, alpha=0.6, edge_color='#4CAF50')
+                             width=2, alpha=0.6, edge_color='#4CAF50')
         
-        # Draw inter-network edges (between subnets)
         nx.draw_networkx_edges(G, pos, edgelist=inter_network_edges,
-                              width=3, alpha=0.8, edge_color='#FF5722')
+                             width=3, alpha=0.8, edge_color='#FF5722')
         
-        # Add labels
         nx.draw_networkx_labels(G, pos, font_size=8, font_weight='bold')
         
-        # Create custom legend
         legend_elements = []
         for network, color in network_color_map.items():
             label = self.network_labels.get(network, network)
             legend_elements.append(plt.Line2D([0], [0], marker='o', color='w',
-                                            markerfacecolor=color, markersize=12,
-                                            label=f"{label}: {network}"))
+                                           markerfacecolor=color, markersize=12,
+                                           label=f"{label}: {network}"))
         
-        # Add edge type legend
         legend_elements.append(plt.Line2D([0], [0], color='#4CAF50', linewidth=3,
-                                        label='Intra-network'))
+                                       label='Intra-network'))
         legend_elements.append(plt.Line2D([0], [0], color='#FF5722', linewidth=3,
-                                        label='Inter-network'))
+                                       label='Inter-network'))
         
         plt.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
         plt.title("Detailed Network Topology - IP Level View", 
@@ -317,11 +292,9 @@ class Hopper:
         print(f"✅ Detailed graph saved as '{output_file}'")
 
     def _visualize_hierarchical(self, output_file):
-        """Hierarchical visualization with networks as groups"""
         fig, ax = plt.subplots(figsize=(16, 12))
         plt.style.use('default')
         
-        # Create the graph
         G = nx.Graph()
         for node in self.graph:
             G.add_node(node)
@@ -332,13 +305,11 @@ class Hopper:
             print("❌ No nodes to visualize")
             return
         
-        # Group nodes by network
         network_positions = {}
         colors = plt.cm.Set3(np.linspace(0, 1, max(len(self.network_map), 1)))
         
         y_offset = 0
         for i, (network, ips) in enumerate(sorted(self.network_map.items())):
-            # Create positions for IPs in this network
             if len(ips) == 1:
                 positions = [(0, y_offset)]
             else:
@@ -348,14 +319,12 @@ class Hopper:
             for j, ip in enumerate(ips):
                 network_positions[ip] = positions[j]
             
-            # Draw network boundary
             if len(ips) > 1:
                 rect = patches.Rectangle((-2.5, y_offset - 0.3), 5, 0.6,
                                        linewidth=2, edgecolor=colors[i],
                                        facecolor=colors[i], alpha=0.2)
                 ax.add_patch(rect)
             
-            # Add network label
             label = self.network_labels.get(network, network)
             ax.text(-3, y_offset, f"{label}\n{network}", 
                    fontsize=10, fontweight='bold',
@@ -363,7 +332,6 @@ class Hopper:
             
             y_offset -= 2
         
-        # Draw nodes
         for node in G.nodes():
             x, y = network_positions[node]
             network = self.ip_to_network.get(node)
@@ -376,7 +344,6 @@ class Hopper:
             ax.text(x, y, node, ha='center', va='center', 
                    fontsize=7, fontweight='bold')
         
-        # Draw edges
         for edge in G.edges():
             x1, y1 = network_positions[edge[0]]
             x2, y2 = network_positions[edge[1]]
@@ -385,10 +352,8 @@ class Hopper:
             net2 = self.ip_to_network.get(edge[1])
             
             if net1 != net2:
-                # Inter-network edge
                 ax.plot([x1, x2], [y1, y2], 'r-', linewidth=2, alpha=0.8)
             else:
-                # Intra-network edge
                 ax.plot([x1, x2], [y1, y2], 'g-', linewidth=1, alpha=0.6)
         
         ax.set_xlim(-4, 3)
@@ -403,13 +368,10 @@ class Hopper:
         print(f"✅ Hierarchical graph saved as '{output_file}'")
 
     def generate_html_report(self, include_images=True):
-        """Generate comprehensive HTML report with embedded graphs"""
         print("\n🧾 Generating HTML report...")
         
-        # Generate visualizations for the report
         graph_files = []
         if include_images:
-            # Generate different visualization styles
             self.visualize_graph("network_view.png", "network")
             self.visualize_graph("detailed_view.png", "detailed") 
             self.visualize_graph("hierarchical_view.png", "hierarchical")
@@ -417,7 +379,6 @@ class Hopper:
         
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Start building HTML
         html = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -536,6 +497,7 @@ class Hopper:
         <h1>📊 Hopper Network Analysis Report</h1>
         <p><strong>Generated:</strong> {timestamp}</p>
         <p><strong>Subnet Mask:</strong> {self.subnet_mask}</p>
+        <p><strong>Project Folder:</strong> {self.project_folder}</p>
         
         <h2>📈 Network Statistics</h2>
         <div class="stats">
@@ -558,7 +520,6 @@ class Hopper:
         </div>
 """
         
-        # Add network details
         html += """
         <h2>🌐 Network Breakdown</h2>
 """
@@ -579,7 +540,6 @@ class Hopper:
             </div>
 """
             
-            # Show connections to other networks
             connected_nets = self.connected_networks.get(network, set())
             if connected_nets:
                 html += "            <p><strong>Connected to:</strong></p>\n"
@@ -589,7 +549,6 @@ class Hopper:
             
             html += "        </div>\n"
         
-        # Add connectivity table
         html += """
         <h2>🔗 Connectivity Matrix</h2>
         <table>
@@ -633,7 +592,6 @@ class Hopper:
         </table>
 """
         
-        # Add visualizations
         if include_images and graph_files:
             html += """
         <h2>📊 Network Visualizations</h2>
@@ -647,7 +605,8 @@ class Hopper:
             ]
             
             for i, (graph_file, title, desc) in enumerate(zip(graph_files, titles, descriptions)):
-                if os.path.exists(graph_file):
+                full_path = os.path.join(self.project_folder, graph_file)
+                if os.path.exists(full_path):
                     html += f"""
         <div class="graph-container">
             <h3>{title}</h3>
@@ -656,7 +615,6 @@ class Hopper:
         </div>
 """
         
-        # Footer
         html += f"""
         <div class="footer">
             <p>Report generated by Hopper Network Analysis Tool</p>
@@ -667,14 +625,13 @@ class Hopper:
 </html>
 """
         
-        # Write HTML file
-        with open("hopper_report.html", "w", encoding='utf-8') as f:
+        report_path = os.path.join(self.project_folder, "hopper_report.html")
+        with open(report_path, "w", encoding='utf-8') as f:
             f.write(html)
         
-        print("✅ HTML report saved as 'hopper_report.html'")
-        print(f"   - Network view: network_view.png")
-        print(f"   - Detailed view: detailed_view.png") 
-        print(f"   - Hierarchical view: hierarchical_view.png")
+        print(f"✅ HTML report saved as '{report_path}'")
+        for graph_file in graph_files:
+            print(f"   - Graph saved: {os.path.join(self.project_folder, graph_file)}")
 
 
 if __name__ == "__main__":
@@ -683,6 +640,7 @@ if __name__ == "__main__":
     parser.add_argument("edges_file", help="File containing IP-to-IP connectivity")
     parser.add_argument("--path", nargs=2, metavar=("SRC", "DST"), help="Find path from SRC to DST")
     parser.add_argument("--subnet", default="255.255.255.0", help="Subnet mask (default: 255.255.255.0)")
+    parser.add_argument("--project", default="hopper_output", help="Project folder name for output files (default: hopper_output)")
     parser.add_argument("--export", action="store_true", help="Export graph to JSON")
     parser.add_argument("--visualize", action="store_true", help="Visualize the graph")
     parser.add_argument("--vis-style", choices=["network", "detailed", "hierarchical"], 
@@ -691,7 +649,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    hopper = Hopper(subnet_mask=args.subnet)
+    hopper = Hopper(subnet_mask=args.subnet, project_folder=args.project)
     hopper.load_ips(args.ips_file)
     hopper.load_edges(args.edges_file)
 
