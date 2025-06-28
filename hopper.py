@@ -8,8 +8,8 @@ import matplotlib.patches as patches
 from datetime import datetime
 import os
 import numpy as np
-import base64
-from io import BytesIO
+
+os.environ["QT_LOGGING_RULES"] = "qt5ct.debug=false;qt6ct.debug=false"
 
 class Hopper:
     def __init__(self, subnet_mask="255.255.255.0", project_folder="hopper_output"):

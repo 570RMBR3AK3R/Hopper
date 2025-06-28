@@ -8,7 +8,6 @@
 * Visualize the network as a PNG
 * Generate clean HTML reports
 
-Whether you're tracing lateral movement paths or just exploring infrastructure, Hopper gives you a clear, actionable view of your internal topology.
 
 ## 🚀 Features
 
@@ -196,4 +195,4 @@ This tool is intended for authorized network analysis and penetration testing on
 
 ---
 
-**Happy Network Mapping! 🕸️**
+**Happy Network Mapping! 🕸️ (Made with 💖 and vibe coding) **
