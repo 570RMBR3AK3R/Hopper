@@ -9,8 +9,6 @@ from datetime import datetime
 import os
 import numpy as np
 
-os.environ["QT_LOGGING_RULES"] = "qt5ct.debug=false;qt6ct.debug=false"
-
 class Hopper:
     def __init__(self, subnet_mask="255.255.255.0", project_folder="hopper_output"):
         self.subnet_mask = subnet_mask
