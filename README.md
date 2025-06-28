@@ -1,44 +1,53 @@
-# Hopper - Network Path Discovery & Visualization Tool
+# Hopper
 
-**Hopper** is a lightweight Python tool designed for security researchers and pentesters to map host-to-host communication paths within complex networks. Given a list of IP addresses and connectivity mappings, Hopper groups hosts by subnet, builds an internal graph of connections, and allows users to:
+**Network Path Discovery & Visualization Tool**
 
-* Identify network segment relationships
-* Find the shortest path between any two IPs  
-* Export the graph as JSON
-* Visualize the network as a PNG
-* Generate clean HTML reports
+Hopper is a lightweight Python tool designed for security researchers and penetration testers to map host-to-host communication paths within complex networks. It provides comprehensive network analysis capabilities including path discovery, visualization, and detailed reporting.
 
+## Overview
 
-## 🚀 Features
+Given a list of IP addresses and connectivity mappings, Hopper automatically groups hosts by subnet, builds an internal graph of connections, and enables users to:
 
-- **Network Segmentation Analysis**: Automatically groups IPs by subnet and identifies inter-network connections
-- **Path Discovery**: Find shortest paths between any two hosts using BFS algorithm
-- **Multiple Output Formats**: 
-  - JSON export for programmatic analysis
-  - PNG network visualization
-  - HTML reports with embedded graphs
-- **Flexible Subnet Configuration**: Customizable subnet masks for different network architectures
-- **Clean Visual Output**: Color-coded network diagrams with clear labeling
+- **Identify network segment relationships** and inter-network connectivity
+- **Find shortest paths** between any two IP addresses using optimized algorithms
+- **Export network data** in JSON format for programmatic analysis
+- **Generate visualizations** in multiple styles (network, detailed, hierarchical)
+- **Create professional HTML reports** with embedded network graphs
+- **Organize outputs** in structured project directories
 
-## 📋 Requirements
+## Key Features
 
+### 🔍 Network Analysis
+- **Automated Subnet Grouping**: Intelligently classifies IP addresses by network segments
+- **Path Discovery**: Implements BFS algorithm for shortest path calculation
+- **Inter-network Mapping**: Identifies connections between different network segments
+
+### 📊 Visualization & Reporting
+- **Multiple Output Formats**: JSON, PNG visualizations, and HTML reports
+- **Flexible Visualization Styles**: Network-level, detailed, and hierarchical views
+- **Professional Reports**: Clean HTML output with embedded network diagrams
+- **Color-coded Diagrams**: Clear visual distinction between networks and connections
+
+### ⚙️ Configuration
+- **Custom Subnet Masks**: Configurable network classification
+- **Project Organization**: User-defined output directories
+- **Flexible Input Formats**: Simple text-based configuration files
+
+## Installation
+
+### Prerequisites
 ```bash
 pip install networkx matplotlib ipaddress
 ```
 
-## 🛠️ Installation
+### Setup
+1. Clone or download the Hopper script
+2. Install the required dependencies
+3. Prepare your input files according to the format specification
 
-1. Clone or download the script
-2. Install dependencies:
-   ```bash
-   pip install networkx matplotlib
-   ```
-3. Prepare your input files (see Input Format section)
-
-## 📁 Input Format
+## Input Format
 
 ### IP Address File (`ips.txt`)
-One IP address per line:
 ```
 192.168.1.10
 192.168.1.20
@@ -48,7 +57,6 @@ One IP address per line:
 ```
 
 ### Connectivity File (`edges.txt`)
-IP-to-IP connections separated by hyphens:
 ```
 192.168.1.10-192.168.1.20
 192.168.1.20-10.0.0.5
@@ -56,56 +64,43 @@ IP-to-IP connections separated by hyphens:
 10.0.0.15-172.16.1.100
 ```
 
-## 🎯 Usage
+## Usage Examples
 
 ### Basic Network Analysis
 ```bash
-python hopper.py ips.txt edges.txt
+python hopper.py ips.txt edges.txt --project my_network_project
 ```
 
-### Find Path Between Hosts
+### Path Discovery
 ```bash
-python hopper.py ips.txt edges.txt --path 192.168.1.10 172.16.1.100
+python hopper.py ips.txt edges.txt --project my_network_project --path 192.168.1.10 172.16.1.100
 ```
 
-### Export to JSON
+### Comprehensive Analysis
 ```bash
-python hopper.py ips.txt edges.txt --export
+python hopper.py ips.txt edges.txt --project my_network_project --path 192.168.1.10 10.0.0.5 --export --visualize --report
 ```
 
-### Generate Network Visualization
+### Custom Configuration
 ```bash
-python hopper.py ips.txt edges.txt --visualize
+python hopper.py ips.txt edges.txt --project my_network_project --subnet 255.255.0.0 --vis-style hierarchical
 ```
 
-### Create HTML Report
-```bash
-python hopper.py ips.txt edges.txt --report
-```
-
-### Custom Subnet Mask
-```bash
-python hopper.py ips.txt edges.txt --subnet 255.255.0.0
-```
-
-### Combined Analysis
-```bash
-python hopper.py ips.txt edges.txt --path 192.168.1.10 10.0.0.5 --export --visualize --report
-```
-
-## 🔧 Command Line Options
+## Command Line Options
 
 | Option | Description |
 |--------|-------------|
-| `ips_file` | File containing IP addresses (required) |
-| `edges_file` | File containing IP-to-IP connectivity (required) |
+| `ips_file` | File containing IP addresses *(required)* |
+| `edges_file` | File containing IP-to-IP connectivity *(required)* |
 | `--path SRC DST` | Find shortest path between source and destination IPs |
-| `--subnet MASK` | Custom subnet mask (default: 255.255.255.0) |
+| `--subnet MASK` | Custom subnet mask *(default: 255.255.255.0)* |
+| `--project FOLDER` | Project folder name for output files *(default: hopper_output)* |
 | `--export` | Export graph data to JSON format |
 | `--visualize` | Generate PNG network visualization |
-| `--report` | Create HTML report with embedded graph |
+| `--vis-style STYLE` | Visualization style: `network`, `detailed`, or `hierarchical` *(default: detailed)* |
+| `--report` | Create HTML report with embedded graphs |
 
-## 📊 Output Examples
+## Sample Output
 
 ### Console Output
 ```
@@ -136,63 +131,102 @@ python hopper.py ips.txt edges.txt --path 192.168.1.10 10.0.0.5 --export --visua
 ### JSON Export Structure
 ```json
 {
-    "nodes": [
-        "192.168.1.10",
-        "192.168.1.20",
-        "10.0.0.5",
-        "10.0.0.15",
-        "172.16.1.100"
-    ],
+    "metadata": {
+        "subnet_mask": "255.255.255.0",
+        "total_networks": 3,
+        "total_ips": 5,
+        "total_connections": 4,
+        "generated_at": "2025-06-28T14:26:00.123456"
+    },
+    "networks": {
+        "192.168.1.0/24": {
+            "label": "Network A",
+            "ips": ["192.168.1.10", "192.168.1.20"],
+            "ip_count": 2,
+            "connected_to": ["10.0.0.0/24"]
+        }
+    },
+    "nodes": ["192.168.1.10", "192.168.1.20", "10.0.0.5"],
     "edges": [
-        ["192.168.1.10", "192.168.1.20"],
-        ["192.168.1.20", "10.0.0.5"],
-        ["10.0.0.5", "10.0.0.15"],
-        ["10.0.0.15", "172.16.1.100"]
+        {
+            "source": "192.168.1.10",
+            "target": "192.168.1.20",
+            "source_network": "192.168.1.0/24",
+            "target_network": "192.168.1.0/24",
+            "is_inter_network": false
+        }
     ]
 }
 ```
 
-## 🔍 Use Cases
+## Use Cases
 
 ### Penetration Testing
-- **Lateral Movement Planning**: Identify paths for network traversal
-- **Network Mapping**: Understand target infrastructure layout
-- **Pivot Point Analysis**: Find critical nodes for maintaining access
+- **Lateral Movement Planning**: Map potential attack paths through network infrastructure
+- **Network Reconnaissance**: Understand target network topology and segmentation
+- **Pivot Point Analysis**: Identify critical nodes for maintaining network access
 
 ### Security Research
-- **Network Topology Discovery**: Map complex enterprise networks
-- **Attack Path Analysis**: Understand potential compromise routes
-- **Infrastructure Assessment**: Identify network segmentation gaps
+- **Network Topology Discovery**: Map complex enterprise network architectures
+- **Attack Path Analysis**: Analyze potential compromise routes and vulnerabilities
+- **Infrastructure Assessment**: Evaluate network segmentation effectiveness
 
 ### Network Administration
-- **Connectivity Troubleshooting**: Visualize communication paths
-- **Network Documentation**: Generate topology reports
-- **Segmentation Verification**: Validate network isolation
+- **Connectivity Troubleshooting**: Visualize communication paths for diagnostics
+- **Network Documentation**: Generate comprehensive topology documentation
+- **Segmentation Verification**: Validate network isolation and security boundaries
 
-## 📁 Output Files
+## Output Files
 
-When using various options, Hopper generates:
+All output files are organized within the specified project folder:
 
-- `hopper_graph.json` - JSON export of network data
-- `hopper_graph.png` - Network visualization image
-- `hopper_report.html` - Complete HTML report
+| File | Description |
+|------|-------------|
+| `hopper_graph.json` | Complete network data in JSON format |
+| `hopper_graph.png` | Primary network visualization |
+| `network_view.png` | Network-level topology view |
+| `detailed_view.png` | Detailed IP-level visualization |
+| `hierarchical_view.png` | Hierarchical network structure |
+| `hopper_report.html` | Professional HTML report with all visualizations |
 
-## ⚠️ Limitations
+## Limitations
 
-- IPv4 addresses only
-- Assumes bidirectional connectivity
-- Basic subnet classification (no VLSM support)
-- Visualization quality depends on network complexity
+- **IPv4 Support Only**: Currently limited to IPv4 address analysis
+- **Bidirectional Connectivity**: Assumes symmetric network connections
+- **Basic Subnet Classification**: No Variable Length Subnet Masking (VLSM) support
+- **Visualization Complexity**: Performance may vary with very large networks
 
-## 🤝 Contributing
+## Troubleshooting
 
-Feel free to submit issues.
+### Suppressing Qt Debug Messages
+If you encounter Qt-related debug messages, add this to the beginning of your script:
 
+```python
+import os
+os.environ["QT_LOGGING_RULES"] = "qt5ct.debug=false;qt6ct.debug=false"
+```
 
-## 🛡️ Disclaimer
+Alternatively, use the non-interactive backend:
+```python
+import matplotlib
+matplotlib.use('Agg')
+```
 
-This tool is intended for authorized network analysis and penetration testing only. Users are responsible for ensuring they have proper authorization before analyzing any network infrastructure.
+## Contributing
+
+We welcome contributions to improve Hopper! Please feel free to:
+- Submit bug reports and feature requests through GitHub issues
+- Propose improvements via pull requests
+- Share use cases and feedback
+
+## License & Disclaimer
+
+**⚠️ Important**: This tool is intended for **authorized network analysis and penetration testing only**. Users are responsible for ensuring they have proper authorization before analyzing any network infrastructure.
+
+## Support
+
+For questions, issues, or feature requests, please use the project's issue tracker.
 
 ---
 
-**Happy Network Mapping! 🕸️ (Made with 💖 and vibe coding) **
+*Built with ❤️ and vibe coding for the security research community*
