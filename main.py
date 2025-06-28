@@ -10,7 +10,7 @@ class Hopper:
         self.graph = defaultdict(set)
 
     def load_ips(self, ip_file):
-        print("\n📦 Loading IPs and grouping into networks...")
+        print("\nLoading IPs and grouping into networks...")
         with open(ip_file, "r") as f:
             for line in f:
                 ip = line.strip()
@@ -86,14 +86,16 @@ class Hopper:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Hopper - Network Relationship Visualizer")
+    parser = argparse.ArgumentParser(description="🔍 Hopper - Network Relationship Visualizer")
     parser.add_argument("ips_file", help="File containing IP addresses")
     parser.add_argument("edges_file", help="File containing IP-to-IP connectivity")
     parser.add_argument("--path", nargs=2, metavar=("SRC", "DST"), help="Find path from SRC to DST")
+    parser.add_argument("--subnet", default="255.255.255.0", help="Subnet mask (default: 255.255.255.0)")
+
 
     args = parser.parse_args()
 
-    hopper = Hopper()
+    hopper = Hopper(subnet_mask=args.subnet)
     hopper.load_ips(args.ips_file)
     hopper.load_edges(args.edges_file)
 
